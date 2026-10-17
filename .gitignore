@@ -1,0 +1,9 @@
+node_modules/
+*.log
+verification.json
+rigor-verification.json
+contrast-verification.json
+desktop.png
+mobile.png
+returned.png
+demo/

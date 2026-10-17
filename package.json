@@ -1,0 +1,17 @@
+{
+  "name": "fieldroom",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Fictional equipment borrowing frontend prototype",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test",
+    "test:browser": "node browser-check.cjs",
+    "test:risk": "node rigor-check.cjs",
+    "test:contrast": "node contrast-check.mjs"
+  }
+}
