@@ -56,7 +56,23 @@ const origin='http://localhost:4173';
  await p.setViewportSize({width:320,height:720});
  await report('Mobile selection moves focus into the visible slip',async()=>{await select();const box=await p.locator('#slip-title').boundingBox();assert.ok(box.y>=0&&box.y+box.height<=720);assert.equal(await p.evaluate(()=>document.activeElement.id),'slip-title');assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);});
  await capture('05-mobile-selected');await click(p,'Review selection →');await p.locator('#agree').check();await click(p,'Confirm simulated hold');
- await report('Mobile confirm/cancel focus remains visible',async()=>{await click(p,'Cancel hold');const box=await p.locator('#slip-title').boundingBox();assert.ok(box.y>=0&&box.y+box.height<=720);});
+ await report('Mobile confirm/cancel focus remains visible through repeat and reload',async()=>{
+  const visibleFocus=async()=>{await p.locator('#slip').evaluate(async e=>{await Promise.all(e.getAnimations().map(a=>a.finished));});const box=await p.locator('#slip-title').boundingBox();assert.equal(await p.evaluate(()=>document.activeElement.id),'slip-title');assert.ok(box.y>=7&&box.y+box.height<=713,'Heading and its 7px focus outline must fit after motion');};
+  await click(p,'Cancel hold');await visibleFocus();
+  for(const motion of ['no-preference','reduce']){
+   await p.emulateMedia({reducedMotion:motion});
+   for(let repeat=0;repeat<3;repeat++){
+    await select();await confirm();
+    if(repeat===1){await p.reload();await p.waitForFunction(()=>document.activeElement.id==='slip-title');}
+    await p.locator('#slip').evaluate(async e=>{await Promise.all(e.getAnimations().map(a=>a.finished));});
+    // A visible Cancel control can coexist with a partly clipped heading after scrolling.
+    await p.locator('#slip-title').evaluate(e=>scrollTo(0,Math.ceil(e.getBoundingClientRect().top+scrollY)+5));
+    const cancelBox=await p.locator('#cancel').boundingBox();assert.ok(cancelBox.y>=0&&cancelBox.y+cancelBox.height<=720);
+    if(repeat===2){await p.locator('#cancel').focus();await p.keyboard.press('Enter');await settle(p);}else await click(p,'Cancel hold');
+    await phase(p,'nothing selected');await visibleFocus();
+   }
+  }
+ });
  await report('Reduced motion disables both animation and button transitions',async()=>{await p.emulateMedia({reducedMotion:'reduce'});await select();assert.equal(await p.locator('#slip').evaluate(e=>getComputedStyle(e).animationName),'none');assert.equal(await p.locator('#review').evaluate(e=>getComputedStyle(e).transitionDuration),'0s');});
  // Storage failures are tested in separate contexts so prototype state is isolated.
  for(const mode of ['read','write','locks']){
