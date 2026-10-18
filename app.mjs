@@ -43,7 +43,13 @@ function render(focus=false){
 }
 $('#stale').onclick=()=>act('stale');$('#reset').onclick=()=>act('reset');
 window.addEventListener('storage',e=>{if(e.key===key||e.key===null)sync(false);});
-window.addEventListener('pageshow',()=>sync(false));
+window.addEventListener('pageshow',event=>{
+ sync(false);
+ if(!event.persisted&&state.item)requestAnimationFrame(()=>{
+  if(state.item){$('#slip-title').focus();$('#slip').scrollIntoView({block:'start'});}
+ });
+});
 window.addEventListener('popstate',()=>sync(false));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')sync(false);});
+if(state.item&&!message)message='Saved demo restored. Review your borrowing slip before continuing.';
 render();

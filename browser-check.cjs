@@ -4,6 +4,7 @@ const fs=require('node:fs/promises');const assert=require('node:assert/strict');
 await page.route('http://localhost:4173/**',async route=>{const name=new URL(route.request().url()).pathname.slice(1)||'index.html';if(!['index.html','style.css','app.mjs','model.mjs','storage.mjs'].includes(name))return route.fulfill({status:404,body:''});await route.fulfill({contentType:name.endsWith('mjs')?'text/javascript':name.endsWith('css')?'text/css':'text/html',body:await fs.readFile(name)});});
 const settled=()=>page.waitForFunction(()=>!document.querySelector('#main').hasAttribute('aria-busy'));const check=async(fn)=>{await settled();await fn();count++;};const text=()=>page.locator('#slip').innerText();const click=async n=>{await page.getByRole('button',{name:n,exact:true}).click();await settled();};
 await page.goto('http://localhost:4173/');await page.screenshot({path:'desktop.png',fullPage:true,animations:'disabled'});
+await check(async()=>{assert.equal(await page.evaluate(()=>document.activeElement.tagName),'BODY');assert.equal(await page.locator('#notice').innerText(),'');});
 await check(async()=>assert.equal(await page.getByRole('button',{name:'Select USB-C charging kit',exact:true}).isDisabled(),true));
 // Complete using real keyboard navigation only, including review agreement.
 await page.keyboard.press('Tab');await page.keyboard.press('Enter');await page.keyboard.press('Tab');await page.keyboard.press('Enter');
@@ -12,9 +13,11 @@ await page.keyboard.press('Tab');await page.keyboard.press('Enter'); // review
 await check(async()=>assert.match(await text(),/Review before confirming/i));
 await page.keyboard.press('Tab');await page.keyboard.press('Space');await page.keyboard.press('Tab');await page.keyboard.press('Enter');
 await check(async()=>assert.match(await text(),/Confirmed · awaiting pickup/i));
-await page.reload();await check(async()=>assert.match(await text(),/Confirmed · awaiting pickup/i));
+await page.reload();await page.waitForFunction(()=>document.activeElement.id==='slip-title');await check(async()=>assert.match(await text(),/Confirmed · awaiting pickup/i));
+await check(async()=>{assert.equal(await page.evaluate(()=>document.activeElement.id),'slip-title');assert.match(await page.locator('#notice').innerText(),/Saved demo restored/);});
 await page.keyboard.press('Tab');await page.keyboard.press('Enter');await check(async()=>assert.match(await text(),/Borrowed · loan active/i));
-await page.reload();await check(async()=>assert.match(await text(),/Borrowed · loan active/i));await page.locator('#pickup').count().then(n=>assert.equal(n,0));
+await page.setViewportSize({width:320,height:720});await page.reload();await page.waitForFunction(()=>document.activeElement.id==='slip-title');await check(async()=>assert.match(await text(),/Borrowed · loan active/i));await page.locator('#pickup').count().then(n=>assert.equal(n,0));
+await check(async()=>{assert.equal(await page.evaluate(()=>document.activeElement.id),'slip-title');const box=await page.locator('#return').boundingBox();assert.ok(box.y>=0&&box.y+box.height<=720);});await page.setViewportSize({width:1280,height:1000});
 await page.locator('#slip-title').focus();await page.keyboard.press('Tab');await page.keyboard.press('Enter');await check(async()=>assert.match(await text(),/Returned · loan closed/i));await page.screenshot({path:'returned.png',fullPage:true,animations:'disabled'});
 await click('Borrow something else →');await click('Select Scientific calculator');await click('Review selection →');await click('Back to selection');await check(async()=>assert.match(await text(),/Selected · not confirmed/i));await click('Clear selection');
 await click('Select Scientific calculator');await page.locator('summary').click();await click('Simulate selected item becoming unavailable');await click('Review selection →');await page.locator('#agree').check();await click('Confirm simulated hold');await check(async()=>assert.match(await page.locator('#notice').innerText(),/Availability changed/));
