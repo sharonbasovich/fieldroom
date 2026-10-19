@@ -39,7 +39,7 @@ function render(focus=false){
  $('#notice').textContent=message;$('#storage').textContent=persistent?'Browser-local saving enabled':'Session only · storage unavailable';$('#stale').disabled=locked||!chosen;$('#reset').disabled=state.phase==='borrowed';
  document.querySelectorAll('[data-select]').forEach(b=>b.onclick=()=>act('select',b.dataset.select));for(const type of ['review','back','cancel','confirm','pickup','return','restart']){const b=$('#'+type);if(b)b.onclick=()=>act(type);}
  if($('#agree'))$('#agree').onchange=e=>{$('#confirm').disabled=!e.target.checked;};
- if(!focus&&restore){const replacement=restore.id?document.getElementById(restore.id):document.querySelector(`[data-select="${restore.item}"]`);(replacement&&!replacement.disabled?replacement:$('#slip-title')).focus();}
+ if(!focus&&restore){const replacement=restore.id?document.getElementById(restore.id):document.querySelector(`[data-select="${restore.item}"]`);if(replacement&&!replacement.disabled)replacement.focus();else{$('#slip-title').focus();$('#slip').scrollIntoView({block:'start'});}}
 }
 $('#stale').onclick=()=>act('stale');$('#reset').onclick=()=>act('reset');
 window.addEventListener('storage',e=>{if(e.key===key||e.key===null)sync(false);});
