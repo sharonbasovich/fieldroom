@@ -1,0 +1,42 @@
+name: Regression checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regression-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Model, contrast and browser checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Install test dependencies
+        run: npm ci --ignore-scripts
+      - name: Check model and storage
+        run: npm test
+      - name: Check color contrast
+        run: npm run test:contrast
+      - name: Install Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Check browser journey
+        run: npm run test:browser
+      - name: Check interrupted and repeated journeys
+        run: npm run test:risk
