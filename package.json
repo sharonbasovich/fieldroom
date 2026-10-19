@@ -13,5 +13,8 @@
     "test:browser": "node browser-check.cjs",
     "test:risk": "node rigor-check.cjs",
     "test:contrast": "node contrast-check.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.64.1"
   }
 }

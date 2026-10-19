@@ -22,12 +22,14 @@ Keyboard from a fresh page: Tab/Enter for the skip link, Tab/Enter to select hea
 
 ## Browser checks
 
-Optional development tool: Playwright with a locally installed Chromium-compatible browser. No Playwright code is shipped to the frontend. Install it only if you want browser verification, following its official instructions. The runners use `require('playwright')` by default; `PLAYWRIGHT_MODULE` may instead point to an existing installed module. `CHROME_PATH` may point to an existing browser; otherwise Playwright uses its installed Chromium. No credentials are needed.
+Optional development tool: Playwright with a locally installed Chromium-compatible browser. No Playwright code is shipped to the frontend. For reproducible browser verification, use Node.js 24, run `npm ci --ignore-scripts`, then `npx playwright install chromium` (on Linux, add `--with-deps` if system dependencies are missing). The pinned development dependency and lockfile are used by CI too. The runners use `require('playwright')` by default; `PLAYWRIGHT_MODULE` may instead point to an existing installed module. `CHROME_PATH` may point to an existing browser; otherwise Playwright uses its installed Chromium. No credentials are needed.
 
 - `npm run test:browser`: 20 regression checks, including keyboard-only completion and visibility of a restored borrowing slip.
 - `npm run test:risk`: 22 targeted checks covering reload, duplicate confirmation, cross-tab state changes, storage failures, focus (including cross-tab replacement), history and reduced motion; also generates five PNG captures under demo/.
 
-The suites overlap. Verification during development used installed Chrome and request fulfillment of unchanged local files at a loopback origin because the execution sandbox denied genuine loopback networking. Thus the recorded browser checks establish rendering and browser behavior, **not a genuine HTTP-served or deployed browser journey**. A fresh extracted source package passed its model/storage and contrast checks. No screen-reader user study, formal WCAG audit, multi-browser certification or real-device speed result is claimed.
+The suites overlap. Verification during development used installed Chrome and request fulfillment of unchanged local files at a loopback origin because the execution sandbox denied genuine loopback networking. CI uses the same request-fulfillment runners with Playwright's Chromium. Thus the recorded browser checks establish rendering and browser behavior, **not a genuine HTTP-served or deployed browser journey**. A fresh extracted source package passed its model/storage and contrast checks. No screen-reader user study, formal WCAG audit, multi-browser certification or real-device speed result is claimed.
+
+GitHub Actions runs all four existing suites on pull requests targeting `main` and pushes to `main`. The regression workflow uses a read-only repository token, does not persist checkout credentials, and does not deploy or change the demo. A failed suite fails its check; merge protection must be configured separately if required.
 
 ## Design and persistence
 
