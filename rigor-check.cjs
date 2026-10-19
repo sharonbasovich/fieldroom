@@ -73,6 +73,27 @@ const origin='http://localhost:4173';
    }
   }
  });
+ await report('Cross-tab replacements keep fallback focus visible and preserve surviving focus',async()=>{
+  const visibleHeading=async()=>{assert.equal(await p.evaluate(()=>document.activeElement.id),'slip-title');const box=await p.locator('#slip-title').boundingBox();assert.ok(box.y>=7&&box.y+box.height<=713,'Fallback heading and its focus outline must fit');};
+  const edgeScroll=async()=>{await p.locator('#slip').evaluate(async e=>Promise.all(e.getAnimations().map(a=>a.finished)));await p.locator('#slip-title').evaluate(e=>scrollTo(0,Math.ceil(e.getBoundingClientRect().y+scrollY)+5));};
+  for(const motion of ['no-preference','reduce']){
+   await p.emulateMedia({reducedMotion:motion});await reset();await select();await confirm();await click(p,'Record simulated pickup →');
+   // Reload interrupts one run; Return is then reached with a real Tab key.
+   if(motion==='reduce'){await p.reload();await p.waitForFunction(()=>document.activeElement.id==='slip-title');}
+   await p.bringToFront();await p.keyboard.press('Tab');assert.equal(await p.evaluate(()=>document.activeElement.id),'return');await edgeScroll();
+   const action=await p.locator('#return').boundingBox();assert.ok(action.y>=0&&action.y+action.height<=720);
+   await q.waitForFunction(()=>!!document.querySelector('#return'));await q.locator('#return').evaluate(e=>e.click());await phase(p,'returned · loan closed');await visibleHeading();
+   await p.keyboard.press('Tab');assert.equal(await p.evaluate(()=>document.activeElement.id),'restart');await p.keyboard.press('Enter');await settle(p);await phase(p,'nothing selected');
+   // A foreign cancellation removes a focused acknowledgment checkbox.
+   await select();await click(p,'Review selection →');await p.keyboard.press('Tab');assert.equal(await p.evaluate(()=>document.activeElement.id),'agree');await edgeScroll();
+   await q.waitForFunction(()=>!!document.querySelector('#agree'));await q.locator('#cancel').evaluate(e=>e.click());await phase(p,'nothing selected');await visibleHeading();
+   // If the focused checkbox survives, keep its position and reset acknowledgment.
+   await select();await click(p,'Review selection →');await p.locator('#agree').check();await edgeScroll();const before=await p.evaluate(()=>scrollY);
+   await q.waitForFunction(()=>!!document.querySelector('#agree'));await q.locator('#stale').evaluate(e=>e.click());await p.waitForFunction(()=>document.querySelector('#agree')?.checked===false);assert.equal(await p.evaluate(()=>document.activeElement.id),'agree');assert.equal(await p.evaluate(()=>scrollY),before);
+  }
+  // Reading prototype controls must not acquire focus or be scrolled into the slip.
+  await reset();await p.locator('summary').focus();const before=await p.evaluate(()=>scrollY);await q.locator('[data-select="calculator"]').evaluate(e=>e.click());await phase(p,'selected · not confirmed');assert.equal(await p.evaluate(()=>document.activeElement.tagName),'SUMMARY');assert.equal(await p.evaluate(()=>scrollY),before);
+ });
  await report('Reduced motion disables both animation and button transitions',async()=>{await p.emulateMedia({reducedMotion:'reduce'});await select();assert.equal(await p.locator('#slip').evaluate(e=>getComputedStyle(e).animationName),'none');assert.equal(await p.locator('#review').evaluate(e=>getComputedStyle(e).transitionDuration),'0s');});
  // Storage failures are tested in separate contexts so prototype state is isolated.
  for(const mode of ['read','write','locks']){
